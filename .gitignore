@@ -1,0 +1,13 @@
+/Debug
+/ipch
+/Release
+/ovr1/Debug
+/ovr1/Release
+*.sdf
+*.suo
+*.dll
+*.txt
+*.vcxproj
+*.filters
+*.gitignore~
+*.user
