@@ -13,7 +13,7 @@ int _tmain(int argc, _TCHAR* argv[]){
 	ovrResult result = ovr_Initialize(nullptr);
 	GL ovrGl;
 	if (!OVR_SUCCESS(result)){
-		printf_s("Failed to initialize libOVR.");
+		printf_s("Failed to initialize libOVR.\n");
 		isOnlyGL = true;
 		goto Done;
 	}
@@ -33,30 +33,45 @@ int _tmain(int argc, _TCHAR* argv[]){
 
 Done:
 	if (isOnlyGL){
-		mat4 view, projection, model;
+		mat4 view, projection, model=mat4(1);
 		ovrGl.init(glwindowSize.x, glwindowSize.y);
-		GLuint shaderprogram = ovrGl.get_program();
-		ovrGl.load_shader("vs0.vshader", "fs0.fshader");
-		glProgramUniformMatrix4fv(shaderprogram, glGetUniformLocation(shaderprogram, "modelMatrix"), 1, GL_FALSE, (float*)&model);
-		glProgramUniformMatrix4fv(shaderprogram, glGetUniformLocation(shaderprogram, "viewMatrix"), 1, GL_FALSE, (float*)&view);
-		glProgramUniformMatrix4fv(shaderprogram, glGetUniformLocation(shaderprogram, "projectionMatrix"), 1, GL_FALSE, (float*)&projection);
 
-		projection = perspective(radians(60.f), glwindowSize.x / glwindowSize.y, 0.1f, 500.f);
+		GLuint shaderprogram = ovrGl.load_shader("vs0.vshader", "fs0.fshader");
+		
+		ovrGl.setCameraPos(vec3(200, 200, 200));
+		projection = perspective(radians(60.f), glwindowSize.x / glwindowSize.y, 0.1f, 1000.f);
 		GLFWwindow* window = ovrGl.getWindow();
 		GLfloat lasttime = glfwGetTime();
+		GLuint myVao = ovrGl.creatVao("e:/vessel.obj", FILE_VESSEL);
+		GLuint indexNum = ovrGl.getElementNum();
+		glEnable(GL_DEPTH_TEST | GL_STENCIL_TEST);
+		glDepthFunc(GL_LESS);
+		glDepthMask(GL_TRUE);
+		glStencilMask(0x00);
+		glEnable(GL_CULL_FACE);
+		
 		while (!glfwWindowShouldClose(window)){
 			view = ovrGl.getViewMatrix();
-			model = mat4(1.f);
+			glClearColor(0, 0, 0, 0);
+			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
+			glViewport(0, 0, 800,600);
 
+			glUseProgram(shaderprogram);
+			glUniformMatrix4fv(glGetUniformLocation(shaderprogram, "modelMatrix"), 1, GL_FALSE, (float*)&model);
+			glUniformMatrix4fv(glGetUniformLocation(shaderprogram, "viewMatrix"), 1, GL_FALSE, (float*)&view);
+			glUniformMatrix4fv(glGetUniformLocation(shaderprogram, "projectionMatrix"), 1, GL_FALSE, (float*)&projection);
 
 			GLfloat now = glfwGetTime(), deltatime = now - lasttime;
-			ovrGl.render(6, deltatime);
+			lasttime = now;
+			ovrGl.render(indexNum, deltatime, myVao);
 
 			glfwPollEvents();
 			glfwSwapBuffers(window);
 		}
-		
+
 		//system("pause");
 	}
+	glfwTerminate();
+
 	return 0;
 }

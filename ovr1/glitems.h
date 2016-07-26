@@ -39,14 +39,16 @@
 using namespace std;
 using namespace glm;
 
-static const enum FILE_l{ FILE_NON, FILE_V, FILE_OBJ, FILE_VSHADER, FILE_FSHADER, FILE_PROGRAM };
+static const enum FILE_l{ FILE_NON, FILE_V, FILE_OBJ, FILE_VSHADER, FILE_FSHADER, FILE_PROGRAM, FILE_INDEX_MINUS_ONE, FILE_WITH_UNSORTED_NORMALS, FILE_VESSEL };
 
 class objload{
 private:
 	struct Vertex{//vertex
-		float x, y, z;
+		GLfloat v[3];
 		Vertex(){}
-		Vertex(float xi, float yi, float zi) :x(xi), y(yi), z(zi){}
+		Vertex(float xi, float yi, float zi) {
+			v[0] = xi, v[1] = yi, v[2] = zi;
+		}
 	};
 
 	struct FaceIndex{//face index
@@ -55,8 +57,13 @@ private:
 		GLuint an, bn, cn;
 
 		FaceIndex(){}
-		FaceIndex(GLuint x, GLuint y, GLuint z) :a(x - 1), b(y - 1), c(z - 1){}
-		FaceIndex(GLuint x[3]) :a(x[0] - 1), b(x[1] - 1), c(x[2] - 1){}
+
+		FaceIndex(GLuint x, GLuint y, GLuint z) :a(x), b(y), c(z){}
+
+		FaceIndex(GLuint x[3]) :a(x[0]-1), b(x[1]-1), c(x[2]-1){}
+		
+		FaceIndex(GLuint x[3], int) :a(x[0]), b(x[1]), c(x[2]){}//vessel, donnot need minus
+
 		FaceIndex(GLuint x[3], GLuint y[3], GLuint z[3]) :
 			a(x[0]), b(x[1]), c(x[2]),
 			auv(y[0]), buv(y[1]), cuv(y[2]),
@@ -64,9 +71,11 @@ private:
 	};
 
 	struct Normal{//normal
-		float x, y, z;
+		float n[3];
 		Normal(){}
-		Normal(float a, float b, float c) :x(a), y(b), z(c){}
+		Normal(float a, float b, float c){
+			n[0] = a, n[1] = b, n[2] = c;
+		}
 	};
 
 	struct Texture{//Texture
@@ -84,12 +93,13 @@ private:
 	float* obj_vertexbuffer, *obj_normalbuffer;
 	int obj_indexbuffer_size, obj_vertexbuffer_size, obj_normalbuffer_size;
 
-	void load_obj(const char* path);
-	GLint load_obj_struct_itr(const char* path, int flag = FILE_V);
+	void load_obj(const char* path,GLuint flag=FILE_NON,GLuint method=FILE_NON);
+	GLint load_obj_struct_itr(const char* path, GLuint flag = FILE_V, GLuint method = FILE_NON);
 
 public:
 
 	GLuint creatvao_obj(const char* path, int flag = FILE_V);
+	GLuint getElementNum(){ return obj_indexbuffer_size; }
 
 	~objload(){
 		Vertices.clear();
@@ -101,11 +111,10 @@ public:
 	}
 };
 
-
 //you must only create single one
 class GL{
 private:
-	GLuint vbo, nbo, vshader, fshader, shaderprogram, ebo, colorbuffer, weight, hight;
+	GLuint vbo, nbo, vshader, fshader, shaderprogram, ebo, colorbuffer, weight, hight, indexNum;
 	GLint success;
 	GLchar infolog[512];
 	vector<vec3> vertexbuffer;
@@ -122,139 +131,29 @@ private:
 
 public:
 
-	//only use with specific shader
-	/*GL(
-		GLfloat* g_vertex_buffer_data_cube,
-		size_t vertex_size,
-		GLuint* indices,
-		size_t index_size,
-		GLfloat* g_color_buffer_data,
-		size_t color_size,
-		char* vs,
-		char* fs){
-
-		glGenVertexArrays(1, &vao);
-		glBindVertexArray(vao);
-
-		glEnableVertexAttribArray(0);
-		glGenBuffers(1, &vbo);
-		glBindBuffer(GL_ARRAY_BUFFER, vbo);
-		glBufferData(GL_ARRAY_BUFFER, vertex_size, g_vertex_buffer_data_cube, GL_STATIC_DRAW);
-		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(GLfloat), NULL);
-
-		glGenBuffers(1, &ebo);
-		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
-		glBufferData(GL_ELEMENT_ARRAY_BUFFER, index_size, indices, GL_STATIC_DRAW);
-
-		glEnableVertexAttribArray(1);
-		glGenBuffers(1, &colorbuffer);
-		glBindBuffer(GL_ARRAY_BUFFER, colorbuffer);
-		glBufferData(GL_ARRAY_BUFFER, color_size, g_color_buffer_data, GL_STATIC_DRAW);
-		glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(GLfloat), NULL);
-
-		//glEnableVertexAttribArray(2);
-		//glGenBuffers(GL_ARRAY_BUFFER, &nbo);
-		//glBindBuffer(GL_ARRAY_BUFFER, nbo);
-		//glBufferData(GL_ARRAY_BUFFER,sizof)
-
-		glBindVertexArray(0);
-		glBindBuffer(GL_ARRAY_BUFFER, 0);
-		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
-
-		creatProgram(vs, fs);
-		}
-
-		GL(
-		GLfloat v_n[],
-		size_t vertex_size,
-		char* vs,
-		char* fs){
-
-		glGenVertexArrays(1, &vao);
-		glBindVertexArray(vao);
-
-		glEnableVertexAttribArray(0);
-		glGenBuffers(1, &vbo);
-		glBindBuffer(GL_ARRAY_BUFFER, vbo);
-		glBufferData(GL_ARRAY_BUFFER, vertex_size, v_n, GL_STATIC_DRAW);
-		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(GLfloat), (void*)0);
-
-		glEnableVertexAttribArray(1);
-		glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(GLfloat), (void*)(3 * sizeof(GLfloat)));
-
-		glEnableVertexAttribArray(2);
-		glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(GLfloat), (void*)(3 * sizeof(GLfloat)));
-
-		glBindVertexArray(0);
-		glBindBuffer(GL_ARRAY_BUFFER, 0);
-
-		creatProgram(vs, fs);
-		}
-
-		void display(mat4 VPmatrix, mat4 modelrotate, vec3 eye){
-		glClearColor(0, 0, 0, 0);
-		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-		glViewport(0, 0, 800, 600);
-		glBindVertexArray(vao);
-		glUseProgram(shaderprogram);
-		glProgramUniformMatrix4fv(shaderprogram, glGetUniformLocation(shaderprogram, "mvp"), 1, GL_FALSE, (float*)&VPmatrix);//load mvp
-		glProgramUniformMatrix4fv(shaderprogram, glGetUniformLocation(shaderprogram, "model"), 1, GL_FALSE, (float*)&modelrotate);
-		glProgramUniform3f(shaderprogram, glGetUniformLocation(shaderprogram, "lightDir"), 1, 0, 0);
-		glProgramUniform3f(shaderprogram, glGetUniformLocation(shaderprogram, "viewPos"), eye.x, eye.y, eye.z);
-		glProgramUniform3f(shaderprogram, glGetUniformLocation(shaderprogram, "lightcolor"), 1, 1, 1);
-		glDrawArrays(GL_TRIANGLES, 0, 3);
-		//glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
-		glBindVertexArray(0);
-		glUseProgram(0);
-		}
-
-		void display(mat4 VPmatrix){
-		glClearColor(0, 0, 0, 0);
-		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-		glViewport(0, 0, 800, 600);
-		glBindVertexArray(vao);
-		glUseProgram(shaderprogram);
-		glProgramUniformMatrix4fv(shaderprogram, glGetUniformLocation(shaderprogram, "mvp"), 1, GL_FALSE, (float*)&VPmatrix);//load mvp
-
-		glDrawArrays(GL_TRIANGLES, 0, 36);
-		//glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
-		glBindVertexArray(0);
-		glUseProgram(0);
-		}
-
-		void display(mat4 model, mat4 view, mat4 projection){
-		glClearColor(0, 0, 0, 0);
-		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-		glViewport(0, 0, 800, 600);
-		glUseProgram(shaderprogram);
-		glProgramUniformMatrix4fv(shaderprogram, glGetUniformLocation(shaderprogram, "model"), 1, GL_FALSE, (float*)&model);//load mvp
-		glProgramUniformMatrix4fv(shaderprogram, glGetUniformLocation(shaderprogram, "view"), 1, GL_FALSE, (float*)&view);//load mvp
-		glProgramUniformMatrix4fv(shaderprogram, glGetUniformLocation(shaderprogram, "projection"), 1, GL_FALSE, (float*)&projection);//load mvp
-
-		glBindVertexArray(vao);
-		glDrawArrays(GL_TRIANGLES, 0, 36);
-		//glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
-		glBindVertexArray(0);
-		glUseProgram(0);
-		}*/
-
 	GL(){}
 
 	GL(int w, int h){ init(w, h); }
 
 	int init(int, int);
-	void render(GLuint, GLfloat);
+	void render(GLuint, GLfloat, GLuint vao_load = 0);
 	void creatProgram(char* vs, char* fs);
+	GLuint creatVao(char* path, int flag = FILE_NON);
 	static GLuint load_shader(const char* path, const char* path2);
 
 	GLuint get_vao(){ return vao; }
 
-	GLuint get_program(){ return shaderprogram; }
+	GLuint get_program(){ return shaderprogram; }//just use usProgram()
+
+	void useProgram(){ glUseProgram(shaderprogram); }
 
 	GLFWwindow* getWindow(){ return window; }
 
 	mat4 getViewMatrix(){ return lookAtRH(cameraPos, cameraPos + cameraFront, cameraUp); }
 
+	GLuint getElementNum(){ return indexNum; }
+
+	void setCameraPos(vec3 pos){ cameraPos = pos; }
 };
 
 #endif//GLITEMS_H

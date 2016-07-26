@@ -1,7 +1,8 @@
 #include "glitems.h"
 #include "stdafx.h"
 
-void objload::load_obj(const char* path){
+
+void objload::load_obj(const char* path,GLuint flag,GLuint method){
 	ifstream obj(path);
 	if (!obj.is_open()){
 		fprintf_s(stderr, "cannot open file\n");
@@ -22,13 +23,14 @@ void objload::load_obj(const char* path){
 		}
 		else if (buffer[0] == 'f' && (buffer[1] == ' ' || buffer[1] == 32)){
 			if (sscanf_s(buffer, "f %d %d %d", &i0[0], &i0[1], &i0[2]) == 3){
-				Indices.push_back(FaceIndex(i0));
+				Indices.push_back((flag==FILE_VESSEL)?FaceIndex(i0,1):FaceIndex(i0));
 			}
 			else if (sscanf_s(buffer, "f %d/%d/%d %d/%d/%d %d/%d/%d",
 				&i0[0], &i1[0], &i2[0],
 				&i0[1], &i1[1], &i2[1],
 				&i0[2], &i1[2], &i2[2]) == 9){
-				Indices.push_back(FaceIndex(i0, i1, i2));
+				i0[0] -= 1, i0[1] -= 1, i0[2] -= 1;
+				Indices.push_back(FaceIndex(i0,i1,i2));
 			}
 			else{
 				fprintf(stderr, "ERROR: FaceIndex not in wanted format in OBJLoader\n");
@@ -62,21 +64,22 @@ void objload::load_obj(const char* path){
 	obj.close();
 }
 
-GLint objload::load_obj_struct_itr(const char* path, int flag){
 
-	load_obj(path);
+GLint objload::load_obj_struct_itr(const char* path, GLuint flag,GLuint method){
+
+	load_obj(path,flag);
 	int iv = 0;
 	printf_s("Loading obj file...\n");
 	if (!Vertices.size() || !Indices.size())
 		goto jump1;
 
-	if (flag == FILE_NON){
+	
 		obj_vertexbuffer_size = Vertices.size() * 3;
 		obj_vertexbuffer = new float[obj_vertexbuffer_size];
 		for (vector<Vertex>::const_iterator ite = Vertices.begin(); ite != Vertices.end(); ++ite){
-			obj_vertexbuffer[iv * 3] = ite->x;
-			obj_vertexbuffer[iv * 3 + 1] = ite->y;
-			obj_vertexbuffer[iv * 3 + 2] = ite->z;
+			obj_vertexbuffer[iv * 3] = ite->v[0];
+			obj_vertexbuffer[iv * 3 + 1] = ite->v[1];
+			obj_vertexbuffer[iv * 3 + 2] = ite->v[2];
 			iv++;
 		}
 		printf_s("vertexbuffer loaded\n");
@@ -85,14 +88,14 @@ GLint objload::load_obj_struct_itr(const char* path, int flag){
 		obj_normalbuffer = new float[obj_normalbuffer_size];
 		iv = 0;
 		for (vector<Normal>::const_iterator ite = Normals.begin(); ite != Normals.end(); ++ite){
-			obj_normalbuffer[iv * 3] = ite->x;
-			obj_normalbuffer[iv * 3 + 1] = ite->y;
-			obj_normalbuffer[iv * 3 + 2] = ite->z;
+			obj_normalbuffer[iv * 3] = ite->n[0];
+			obj_normalbuffer[iv * 3 + 1] = ite->n[1];
+			obj_normalbuffer[iv * 3 + 2] = ite->n[2];
 			iv++;
 		}
 		printf_s("normalbuffer loaded\n");
 		printf_s("obj file loaded\n");
-	}
+	
 
 	iv = 0;
 	obj_indexbuffer_size = Indices.size() * 3;
@@ -124,16 +127,16 @@ GLuint objload::creatvao_obj(const char* path, int flag){
 		glEnableVertexAttribArray(0);
 		glGenBuffers(1, &vbo_l);
 		glBindBuffer(GL_ARRAY_BUFFER, vbo_l);
-		glBufferData(GL_ARRAY_BUFFER, sizeof(obj_vertexbuffer), obj_vertexbuffer, GL_STATIC_DRAW);
-		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(GL_FLOAT), NULL);
+		glBufferData(GL_ARRAY_BUFFER, sizeof(float)*obj_vertexbuffer_size, obj_vertexbuffer, GL_STATIC_DRAW);
+		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(GLfloat), NULL);
 
 		glGenBuffers(1, &ebo_l);
 		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo_l);
-		glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(obj_indexbuffer), obj_indexbuffer, GL_STATIC_DRAW);
+		glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(GLuint)*obj_indexbuffer_size, obj_indexbuffer, GL_STATIC_DRAW);
 
 		glBindVertexArray(0);
 	}
-	else if (flag == FILE_V){
+	else if (flag == FILE_WITH_UNSORTED_NORMALS){//something weird
 
 		glGenVertexArrays(1, &vao_l);
 		glBindVertexArray(vao_l);
@@ -142,26 +145,28 @@ GLuint objload::creatvao_obj(const char* path, int flag){
 		glGenBuffers(1, &vbo_l);
 		glBindBuffer(GL_ARRAY_BUFFER, vbo_l);
 		glBufferData(GL_ARRAY_BUFFER, Vertices.size()* sizeof(Vertex), &Vertices[0], GL_STATIC_DRAW);
-		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void *)offsetof(Vertex, x));
+		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void *)offsetof(Vertex, v));
 
 		glGenBuffers(1, &ebo_l);
 		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo_l);
-		glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(obj_indexbuffer), obj_indexbuffer, GL_STATIC_DRAW);
+		glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(obj_indexbuffer)*obj_indexbuffer_size, obj_indexbuffer, GL_STATIC_DRAW);
 
-		printf_s("sorting normals....");
 		vector<Normal>sequentialNormals(Vertices.size());
 		vector<GLushort> temp_index;
+		if (!Normals.size())
+			goto no_normals;
+		printf_s("sorting normals....");
 		for (auto ite = Indices.begin(); ite != Indices.end(); ++ite){
 			if (UFIND_INDEX(temp_index, ite->a)){
-				sequentialNormals[ite->a - 1] = Normals[ite->an - 1];
+				sequentialNormals[ite->a] = Normals[ite->an - 1];
 				temp_index.push_back(ite->a);
 			}
 			if (UFIND_INDEX(temp_index, ite->b)){
-				sequentialNormals[ite->b - 1] = Normals[ite->bn - 1];
+				sequentialNormals[ite->b] = Normals[ite->bn - 1];
 				temp_index.push_back(ite->b);
 			}
 			if (UFIND_INDEX(temp_index, ite->c)){
-				sequentialNormals[ite->c - 1] = Normals[ite->cn - 1];
+				sequentialNormals[ite->c] = Normals[ite->cn - 1];
 				temp_index.push_back(ite->c);
 			}
 
@@ -171,26 +176,50 @@ GLuint objload::creatvao_obj(const char* path, int flag){
 				break;
 			}
 		}
-
+		printf_s("sorting complete\n");
 		glEnableVertexAttribArray(1);
 		glGenBuffers(1, &nbo_l);
 		glBindBuffer(GL_ARRAY_BUFFER, nbo_l);
 		glBufferData(GL_ARRAY_BUFFER, sequentialNormals.size()* sizeof(Normal), &sequentialNormals[0], GL_STATIC_DRAW);
-		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(Normal), (void *)offsetof(Normal, x));
+		glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(Normal), (void *)offsetof(Normal, n));
+
+no_normals:
+		temp_index.clear();
+		sequentialNormals.clear();
+		glBindVertexArray(0);
+	}
+
+	else if (flag == FILE_VESSEL){
+		glGenVertexArrays(1, &vao_l);
+		glBindVertexArray(vao_l);
+
+		glEnableVertexAttribArray(0);
+		glGenBuffers(1, &vbo_l);
+		glBindBuffer(GL_ARRAY_BUFFER, vbo_l);
+		glBufferData(GL_ARRAY_BUFFER, Vertices.size()* sizeof(Vertex), &Vertices[0], GL_STATIC_DRAW);
+		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void *)offsetof(Vertex, v));
+
+		glGenBuffers(1, &ebo_l);
+		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo_l);
+		glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(obj_indexbuffer)*obj_indexbuffer_size, obj_indexbuffer, GL_STATIC_DRAW);
+		
+		glEnableVertexAttribArray(1);
+		glGenBuffers(1, &nbo_l);
+		glBindBuffer(GL_ARRAY_BUFFER, nbo_l);
+		glBufferData(GL_ARRAY_BUFFER, Normals.size()* sizeof(Normal), &Normals[0], GL_STATIC_DRAW);
+		glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(Normal), (void *)offsetof(Normal, n));
 
 		glBindVertexArray(0);
-
-		vector<Normal>().swap(sequentialNormals);
-		vector<GLushort>().swap(temp_index);
 	}
 	return vao_l;
 }
+
 
 //initialize static variable
 bool GL::isFullScreen = false;
 GLint GL::xmov = 0, GL::xold = 0;
 objload GL::Obj = objload();
-vec3 GL::cameraFront = vec3(0, 0, -1), GL::cameraPos = vec3(0, 0, -7), GL::cameraUp = vec3(0, 1, 0);
+vec3 GL::cameraFront = vec3(0, 0, -1), GL::cameraPos = vec3(0, 0, 7), GL::cameraUp = vec3(0, 1, 0);
 GLFWwindow* GL::window = nullptr;
 map<int, bool> GL::keystatus = map<int, bool>();
 GLuint GL::vao = NULL;
@@ -327,7 +356,7 @@ int GL::init(int weight, int hight){
 			break;
 
 		case GLFW_KEY_R:
-			cameraPos = vec3(0, 0, -7);
+			cameraPos = vec3(0, 0, 7);
 			break;
 
 		default:
@@ -431,7 +460,7 @@ int GL::drop_file(string s){
 void GL::do_movement(GLfloat deltaTime)
 {
 	// Camera controls
-	GLfloat cameraSpeed = 5.0f * deltaTime;
+	GLfloat cameraSpeed = 34.4f * deltaTime;
 	if (keystatus[GLFW_KEY_W])
 		cameraPos += cameraSpeed * cameraFront;
 	else if (keystatus[GLFW_KEY_S])
@@ -448,13 +477,24 @@ void GL::do_movement(GLfloat deltaTime)
 		cameraPos -= normalize(cameraUp)*cameraSpeed;
 }
 
-void GL::render(GLuint indicesNum,GLfloat time){
+//store the quantity of face in indexNum
+GLuint GL::creatVao(char* path, int flag){
+	GLuint vao_temp;
+	vao_temp=Obj.creatvao_obj(path,flag); 
+	this->indexNum = Obj.getElementNum();
+	return vao_temp;
+}
+
+void GL::render(GLuint indicesNum, GLfloat time, GLuint vao_load){
 	do_movement(time);
+	char buffer[512];
+	sprintf_s(buffer, 512, "pos:%4.2f %4.2f %4.2f", cameraPos.x, cameraPos.y, cameraPos.z);
+	glfwSetWindowTitle(this->window, buffer);
 	glClearColor(0, 0, 0, 0);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	glViewport(0, 0, this->weight, this->hight);
-	glBindVertexArray(vao);
-	glUseProgram(shaderprogram);
+	glBindVertexArray(!vao_load ? vao : vao_load);
+	//glUseProgram(shaderprogram);
 	//glDrawArrays(GL_TRIANGLES, 0, 3);
 	glDrawElements(GL_TRIANGLES, indicesNum, GL_UNSIGNED_INT, 0);
 	glBindVertexArray(0);
