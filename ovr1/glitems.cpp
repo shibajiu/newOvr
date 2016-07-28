@@ -217,7 +217,7 @@ no_normals:
 
 //initialize static variable
 bool GL::isFullScreen = false;
-GLint GL::xmov = 0, GL::xold = 0;
+GLint GL::xmov = 0, GL::xold = 0,GL::ymov=0,GL::yold=0;
 objload GL::Obj = objload();
 vec3 GL::cameraFront = vec3(0, 0, -1), GL::cameraPos = vec3(0, 0, 7), GL::cameraUp = vec3(0, 1, 0);
 GLFWwindow* GL::window = nullptr;
@@ -330,6 +330,8 @@ int GL::init(int weight, int hight){
 		[](GLFWwindow* win, double x, double y){
 		xmov += x - xold;
 		xold = x;
+		ymov += y - yold;
+		yold = y;
 	}
 	);
 	glfwSetKeyCallback(
@@ -486,6 +488,10 @@ GLuint GL::creatVao(char* path, int flag){
 }
 
 void GL::render(GLuint indicesNum, GLfloat time, GLuint vao_load){
+	GLfloat yaw=0, pitch=0;
+	yaw += xmov;
+	pitch += ymov;
+	cameraFront = vec3(cos(radians(pitch))*sin(radians(yaw)), sin(radians(pitch)), -cos(radians(pitch))*cos(radians(yaw)));
 	do_movement(time);
 	char buffer[512];
 	sprintf_s(buffer, 512, "pos:%4.2f %4.2f %4.2f", cameraPos.x, cameraPos.y, cameraPos.z);

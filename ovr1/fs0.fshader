@@ -47,8 +47,9 @@ void main(){
 
 	//specular color
 	vec3 viewDir=normalize(eyePos-fragpos);
-	vec3 reflectDir=reflect(-lightDir,c);
-	float specularStrength=pow(max(dot(reflectDir,viewDir),0),vessel.shiness);
+	vec3 halfDir=normalize(lightDir+viewDir);
+	//vec3 reflectDir=reflect(-lightDir,c);
+	float specularStrength=pow(max(dot(halfDir,viewDir),0),vessel.shiness);
 	specularColor=vessel.specular*light.specular*specularStrength;
 
 	color=vec4(c,1);

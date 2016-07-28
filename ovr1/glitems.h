@@ -118,7 +118,7 @@ private:
 	GLint success;
 	GLchar infolog[512];
 	vector<vec3> vertexbuffer;
-	static GLint xmov, xold;
+	static GLint xmov, xold, ymov, yold;
 	static GLuint vao;//please store this after create
 	static GLFWwindow* window;
 	static objload Obj;
@@ -127,7 +127,6 @@ private:
 	static vec3 cameraPos, cameraFront, cameraUp;
 
 	static int drop_file(string s);
-	void do_movement(GLfloat);
 
 public:
 
@@ -136,6 +135,7 @@ public:
 	GL(int w, int h){ init(w, h); }
 
 	int init(int, int);
+	void do_movement(GLfloat);
 	void render(GLuint, GLfloat, GLuint vao_load = 0);
 	void creatProgram(char* vs, char* fs);
 	GLuint creatVao(char* path, int flag = FILE_NON);
