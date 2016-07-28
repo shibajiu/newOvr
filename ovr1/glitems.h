@@ -15,6 +15,8 @@
 #define OVR_OS_LINUX
 #endif
 
+#define MYOVR
+
 #include <GL\glew.h>
 #include <GLFW\glfw3.h>
 #include <GLFW\glfw3native.h>
@@ -30,6 +32,12 @@
 #include <map>
 #include <gtc/type_ptr.hpp>
 #include <SOIL.h>
+
+
+#ifdef MYOVR
+#include<Extras/OVR_Math.h>
+using namespace OVR;
+#endif
 
 #define GET_ARRAY_LEN(array) (sizeof(array) / sizeof(array[0]))
 #define UFIND_INDEX(x,y) find(x.begin(),x.end(),y)==x.end()
@@ -125,7 +133,7 @@ private:
 	static map<int, bool>keystatus;
 	static bool isFullScreen;
 	static vec3 cameraPos, cameraFront, cameraUp;
-
+	void do_movement(GLfloat);
 	static int drop_file(string s);
 
 public:
@@ -135,7 +143,6 @@ public:
 	GL(int w, int h){ init(w, h); }
 
 	int init(int, int);
-	void do_movement(GLfloat);
 	void render(GLuint, GLfloat, GLuint vao_load = 0);
 	void creatProgram(char* vs, char* fs);
 	GLuint creatVao(char* path, int flag = FILE_NON);
@@ -154,6 +161,9 @@ public:
 	GLuint getElementNum(){ return indexNum; }
 
 	void setCameraPos(vec3 pos){ cameraPos = pos; }
+#ifdef MYOVR
+	static vec3 keyShift(GLfloat, Vector3f&, Vector3f&, Vector3f&,Vector3f&);
+#endif
 };
 
 #endif//GLITEMS_H

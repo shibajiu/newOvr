@@ -506,3 +506,27 @@ void GL::render(GLuint indicesNum, GLfloat time, GLuint vao_load){
 	glBindVertexArray(0);
 	glUseProgram(0);
 }
+
+#ifdef MYOVR
+
+vec3 GL::keyShift(GLfloat time, Vector3f& pos, Vector3f& front, Vector3f& up,Vector3f& pos2){
+	GLfloat cameraSpeed = 34.4f * time;
+	vec3 shifit;
+	if (keystatus[GLFW_KEY_W])
+		pos2 += Vector3f(cameraSpeed) * front;
+	else if (keystatus[GLFW_KEY_S])
+		pos2 -= Vector3f(cameraSpeed) * front;
+	else if (keystatus[GLFW_KEY_A])
+		pos2 -= (front.Cross(up)).Normalized() * Vector3f(cameraSpeed);
+	//cameraPos -= vec3(1, 0, 0)*cameraSpeed;
+	else if (keystatus[GLFW_KEY_D])
+		pos2 += (front.Cross(up)).Normalized() * cameraSpeed;
+	//cameraPos += vec3(1, 0, 0)*cameraSpeed;
+	else if (keystatus[GLFW_KEY_U])
+		pos2 += up.Normalized()*cameraSpeed;
+	else if (keystatus[GLFW_KEY_J])
+		pos2 -= up.Normalized()*cameraSpeed;
+	return shifit;
+}
+
+#endif

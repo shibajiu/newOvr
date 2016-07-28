@@ -347,8 +347,6 @@ int _tmain(int argc, _TCHAR* argv[]){
 	static mat4 view, projection, model = mat4(1);
 	static	GLfloat lasttime;
 
-	glfwSwapInterval(1);
-
 	shaderprogram = ovrGL->load_shader("vs0.vshader", "fs0.fshader");
 	//ovrGL->setCameraPos(vec3(200, 200, 200));
 	myVao = ovrGL->creatVao("e:/vessel.obj", FILE_VESSEL);
@@ -370,9 +368,9 @@ int _tmain(int argc, _TCHAR* argv[]){
 		ovr_CalcEyePoses(hmdState.HeadPose.ThePose, hmdToEyeViewOffset, layer.RenderPose);
 		layer.SensorSampleTime = sensorSampleTime;
 		glClearColor(0, 1, 0, 0);
-		view = ovrGL->getViewMatrix();
+		//view = ovrGL->getViewMatrix();
 
-		Pos2.y = ovr_GetFloat(session, OVR_KEY_EYE_HEIGHT, Pos2.y);
+		//Pos2.y = ovr_GetFloat(session, OVR_KEY_EYE_HEIGHT, Pos2.y);
 
 		if (isVisible){
 			for (int eye = 0; eye < 2; ++eye){
@@ -399,14 +397,18 @@ int _tmain(int argc, _TCHAR* argv[]){
 				Vector3f finalForward = finalRollPitchYaw.Transform(Vector3f(0, 0, -1));
 				Vector3f shiftedEyePos = Pos2 + rollPitchYaw.Transform(layer.RenderPose[eye].Position);
 				
+				GLfloat now = glfwGetTime(), deltatime = now - lasttime;
+				lasttime = now;
+				ovrGL->keyShift(deltatime, shiftedEyePos, finalForward, finalUp,Pos2);
 				Matrix4f viewOvr = Matrix4f::LookAtRH(shiftedEyePos, shiftedEyePos + finalForward, finalUp);
-				/*for (int i = 0; i < 4; ++i){
+			/*for (int i = 0; i < 4; ++i){
 
 					for (int j = 0; i < 4; ++j){
 						projection[i][j] = proj.M[j][i];
 						view[i][j] = viewOvr.M[j][i];
 					}
 				}*/
+				
 				glDepthMask(GL_FALSE);
 				glBindVertexArray(sb_vao);
 				glUseProgram(skyboxprogram);
@@ -422,8 +424,6 @@ int _tmain(int argc, _TCHAR* argv[]){
 				glDepthMask(GL_TRUE);
 				
 
-				GLfloat now = glfwGetTime(), deltatime = now - lasttime;
-				lasttime = now;
 
 
 
