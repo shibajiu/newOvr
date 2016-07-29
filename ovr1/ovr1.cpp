@@ -4,181 +4,7 @@
 #include "stdafx.h"
 void ovrDisplay1st();
 void ovrDisplaying(mat4);
-#define ONLYGL
-#ifdef USE
-#pragma region
-
-void rendering_loop();
-void quat_to_matrix(const float *quat, float *mat);
-void draw_scene(void);
-void draw_box(float xsz, float ysz, float zsz, float norm_sign);
-void genFBO();
-unsigned int gen_chess_tex(float r0, float g0, float b0, float r1, float g1, float b1);
-GLuint chess_tex;
-
-void quat_to_matrix(const float *quat, float *mat){
-	mat[0] = 1.0 - 2.0 * quat[1] * quat[1] - 2.0 * quat[2] * quat[2];
-	mat[4] = 2.0 * quat[0] * quat[1] + 2.0 * quat[3] * quat[2];
-	mat[8] = 2.0 * quat[2] * quat[0] - 2.0 * quat[3] * quat[1];
-	mat[12] = 0.0f;
-
-	mat[1] = 2.0 * quat[0] * quat[1] - 2.0 * quat[3] * quat[2];
-	mat[5] = 1.0 - 2.0 * quat[0] * quat[0] - 2.0 * quat[2] * quat[2];
-	mat[9] = 2.0 * quat[1] * quat[2] + 2.0 * quat[3] * quat[0];
-	mat[13] = 0.0f;
-
-	mat[2] = 2.0 * quat[2] * quat[0] + 2.0 * quat[3] * quat[1];
-	mat[6] = 2.0 * quat[1] * quat[2] - 2.0 * quat[3] * quat[0];
-	mat[10] = 1.0 - 2.0 * quat[0] * quat[0] - 2.0 * quat[1] * quat[1];
-	mat[14] = 0.0f;
-
-	mat[3] = mat[7] = mat[11] = 0.0f;
-	mat[15] = 1.0f;
-}
-
-void draw_scene(void){
-	int i;
-	float grey[] = { 0.8, 0.8, 0.8, 1 };
-	float col[] = { 0, 0, 0, 1 };
-	float lpos[][4] = {
-		{ -8, 2, 10, 1 },
-		{ 0, 15, 0, 1 }
-	};
-	float lcol[][4] = {
-		{ 0.8, 0.8, 0.8, 1 },
-		{ 0.4, 0.3, 0.3, 1 }
-	};
-
-	for (i = 0; i<2; i++) {
-		glLightfv(GL_LIGHT0 + i, GL_POSITION, lpos[i]);
-		glLightfv(GL_LIGHT0 + i, GL_DIFFUSE, lcol[i]);
-	}
-
-	glMatrixMode(GL_MODELVIEW);
-
-	glPushMatrix();
-	glTranslatef(0, 10, 0);
-	glMaterialfv(GL_FRONT_AND_BACK, GL_AMBIENT_AND_DIFFUSE, grey);
-	glBindTexture(GL_TEXTURE_2D, chess_tex);
-	glEnable(GL_TEXTURE_2D);
-	draw_box(30, 20, 30, -1.0);
-	glDisable(GL_TEXTURE_2D);
-	glPopMatrix();
-
-	for (i = 0; i<4; i++) {
-		glMaterialfv(GL_FRONT_AND_BACK, GL_AMBIENT_AND_DIFFUSE, grey);
-		glPushMatrix();
-		glTranslatef(i & 1 ? 5 : -5, 1, i & 2 ? -5 : 5);
-		draw_box(0.5, 2, 0.5, 1.0);
-		glPopMatrix();
-
-		col[0] = i & 1 ? 1.0 : 0.3;
-		col[1] = i == 0 ? 1.0 : 0.3;
-		col[2] = i & 2 ? 1.0 : 0.3;
-		glMaterialfv(GL_FRONT_AND_BACK, GL_AMBIENT_AND_DIFFUSE, col);
-
-		glPushMatrix();
-		if (i & 1) {
-			glTranslatef(0, 0.25, i & 2 ? 2 : -2);
-		}
-		else {
-			glTranslatef(i & 2 ? 2 : -2, 0.25, 0);
-		}
-		draw_box(0.5, 0.5, 0.5, 1.0);
-		glPopMatrix();
-	}
-
-	col[0] = 1;
-	col[1] = 1;
-	col[2] = 0.4;
-	glMaterialfv(GL_FRONT_AND_BACK, GL_AMBIENT_AND_DIFFUSE, col);
-	draw_box(0.05, 1.2, 6, 1.0);
-	draw_box(6, 1.2, 0.05, 1.0);
-}
-
-void draw_box(float xsz, float ysz, float zsz, float norm_sign){
-	glMatrixMode(GL_MODELVIEW);
-	glPushMatrix();
-	glScalef(xsz * 0.5, ysz * 0.5, zsz * 0.5);
-
-	if (norm_sign < 0.0) {
-		glFrontFace(GL_CW);
-	}
-
-	glBegin(GL_QUADS);
-	glNormal3f(0, 0, 1 * norm_sign);
-	glTexCoord2f(0, 0); glVertex3f(-1, -1, 1);
-	glTexCoord2f(1, 0); glVertex3f(1, -1, 1);
-	glTexCoord2f(1, 1); glVertex3f(1, 1, 1);
-	glTexCoord2f(0, 1); glVertex3f(-1, 1, 1);
-	glNormal3f(1 * norm_sign, 0, 0);
-	glTexCoord2f(0, 0); glVertex3f(1, -1, 1);
-	glTexCoord2f(1, 0); glVertex3f(1, -1, -1);
-	glTexCoord2f(1, 1); glVertex3f(1, 1, -1);
-	glTexCoord2f(0, 1); glVertex3f(1, 1, 1);
-	glNormal3f(0, 0, -1 * norm_sign);
-	glTexCoord2f(0, 0); glVertex3f(1, -1, -1);
-	glTexCoord2f(1, 0); glVertex3f(-1, -1, -1);
-	glTexCoord2f(1, 1); glVertex3f(-1, 1, -1);
-	glTexCoord2f(0, 1); glVertex3f(1, 1, -1);
-	glNormal3f(-1 * norm_sign, 0, 0);
-	glTexCoord2f(0, 0); glVertex3f(-1, -1, -1);
-	glTexCoord2f(1, 0); glVertex3f(-1, -1, 1);
-	glTexCoord2f(1, 1); glVertex3f(-1, 1, 1);
-	glTexCoord2f(0, 1); glVertex3f(-1, 1, -1);
-	glEnd();
-	glBegin(GL_TRIANGLE_FAN);
-	glNormal3f(0, 1 * norm_sign, 0);
-	glTexCoord2f(0.5, 0.5); glVertex3f(0, 1, 0);
-	glTexCoord2f(0, 0); glVertex3f(-1, 1, 1);
-	glTexCoord2f(1, 0); glVertex3f(1, 1, 1);
-	glTexCoord2f(1, 1); glVertex3f(1, 1, -1);
-	glTexCoord2f(0, 1); glVertex3f(-1, 1, -1);
-	glTexCoord2f(0, 0); glVertex3f(-1, 1, 1);
-	glEnd();
-	glBegin(GL_TRIANGLE_FAN);
-	glNormal3f(0, -1 * norm_sign, 0);
-	glTexCoord2f(0.5, 0.5); glVertex3f(0, -1, 0);
-	glTexCoord2f(0, 0); glVertex3f(-1, -1, -1);
-	glTexCoord2f(1, 0); glVertex3f(1, -1, -1);
-	glTexCoord2f(1, 1); glVertex3f(1, -1, 1);
-	glTexCoord2f(0, 1); glVertex3f(-1, -1, 1);
-	glTexCoord2f(0, 0); glVertex3f(-1, -1, -1);
-	glEnd();
-
-	glFrontFace(GL_CCW);
-	glPopMatrix();
-}
-
-unsigned int gen_chess_tex(float r0, float g0, float b0, float r1, float g1, float b1){
-	int i, j;
-	unsigned int tex;
-	unsigned char img[8 * 8 * 3];
-	unsigned char *pix = img;
-
-	for (i = 0; i<8; i++) {
-		for (j = 0; j<8; j++) {
-			int black = (i & 1) == (j & 1);
-			pix[0] = (black ? r0 : r1) * 255;
-			pix[1] = (black ? g0 : g1) * 255;
-			pix[2] = (black ? b0 : b1) * 255;
-			pix += 3;
-		}
-	}
-
-	glGenTextures(1, &tex);
-	glBindTexture(GL_TEXTURE_2D, tex);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-	//glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, 8, 8, 0, GL_RGB, GL_UNSIGNED_BYTE, img);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_SRGB8_ALPHA8, 8, 8, 0, GL_RGBA, GL_UNSIGNED_BYTE, img);
-	printf("generated texture\n");
-	return tex;
-}
-
-#pragma endregion
-#endif
-
+//#define ONLYGL
 
 GLfloat skyboxVertices[] = {
 	// Positions          
@@ -326,28 +152,34 @@ int _tmain(int argc, _TCHAR* argv[]){
 	GL glsb;
 	GLuint skyboxprogram = glsb.load_shader(const_cast<char*>("skybox.vshader"), const_cast<char*>("skybox.fshader"));
 
-#ifdef USE
-	glEnable(GL_DEPTH_TEST);
-	glEnable(GL_CULL_FACE);
-	glEnable(GL_LIGHTING);
-	glEnable(GL_LIGHT0);
-	glEnable(GL_LIGHT1);
-	glEnable(GL_NORMALIZE);
-	float V[] = { 1, 1, 1, 1 };
-	glLightModelfv(GL_LIGHT_MODEL_AMBIENT, V);
-	glEnable(GL_COLOR_MATERIAL);
-
-	glClearColor(1, 1, 1, 1);
-	chess_tex = gen_chess_tex(1.0, 0.7, 0.4, 0.4, 0.7, 1.0);
-#endif
-
-	
 	auto window = ovrGL->getWindow();
 	static GLuint shaderprogram, myVao, indexNum;
 	static mat4 view, projection, model = mat4(1);
 	static	GLfloat lasttime;
 
 	shaderprogram = ovrGL->load_shader("vs0.vshader", "fs0.fshader");
+	GLint matAmbientLoc = glGetUniformLocation(shaderprogram, "vessel.ambient");
+	GLint matDiffuseLoc = glGetUniformLocation(shaderprogram, "vessel.diffuse");
+	GLint matSpecularLoc = glGetUniformLocation(shaderprogram, "vessel.specular");
+	GLint matShineLoc = glGetUniformLocation(shaderprogram, "vessel.shininess");
+
+	glProgramUniform3f(shaderprogram, matAmbientLoc, 1.0f, 0.5f, 0.31f);
+	glProgramUniform3f(shaderprogram, matDiffuseLoc, 1.0f, 0.5f, 0.31f);
+	glProgramUniform3f(shaderprogram, matSpecularLoc, 0.5f, 0.5f, 0.5f);
+	glProgramUniform1f(shaderprogram, matShineLoc, 32.0f);
+
+	GLint viewPosLoc = glGetUniformLocation(shaderprogram, "viewPos");
+	GLint lightPosition = glGetUniformLocation(shaderprogram, "light.position");
+	GLint lightAmbientLoc = glGetUniformLocation(shaderprogram, "light.ambient");
+	GLint lightDiffuseLoc = glGetUniformLocation(shaderprogram, "light.diffuse");
+	GLint lightSpecularLoc = glGetUniformLocation(shaderprogram, "light.specular");
+
+	glProgramUniform3f(shaderprogram, lightAmbientLoc, 0.2f, 0.2f, 0.2f);
+	glProgramUniform3f(shaderprogram, lightDiffuseLoc, 0.5f, 0.5f, 0.5f);
+	glProgramUniform3f(shaderprogram, lightSpecularLoc, 1.0f, 1.0f, 1.0f);
+	glProgramUniform4f(shaderprogram, lightPosition, 1.0f, 1.0f, 1.0f, 0.f);
+
+
 	//ovrGL->setCameraPos(vec3(200, 200, 200));
 	myVao = ovrGL->creatVao("e:/vessel.obj", FILE_VESSEL);
 	indexNum = ovrGL->getElementNum();
@@ -409,19 +241,6 @@ int _tmain(int argc, _TCHAR* argv[]){
 					}
 				}*/
 				
-				glDepthMask(GL_FALSE);
-				glBindVertexArray(sb_vao);
-				glUseProgram(skyboxprogram);
-				glUniformMatrix4fv(glGetUniformLocation(skyboxprogram, "modelMatrix"), 1, GL_FALSE, (float*)&model);
-				glUniformMatrix4fv(glGetUniformLocation(skyboxprogram, "viewMatrix"), 1, GL_TRUE, (float*)&viewOvr.M[0]);
-				glUniformMatrix4fv(glGetUniformLocation(skyboxprogram, "projectionMatrix"), 1, GL_TRUE, (float*)&proj.M[0]);
-				glActiveTexture(GL_TEXTURE0);
-				glUniform1i(glGetUniformLocation(skyboxprogram,"texSkyBox"),0);
-				glBindTexture(GL_TEXTURE_CUBE_MAP, skybox);
-				glDrawArrays(GL_TRIANGLES, 0, 36);
-				glBindVertexArray(0);
-				glUseProgram(0);
-				glDepthMask(GL_TRUE);
 				
 				char buffer[512];
 				sprintf_s(buffer, 512, "pos:%4.2f %4.2f %4.2f", shiftedEyePos.x, shiftedEyePos.y, shiftedEyePos.z);
@@ -437,6 +256,20 @@ int _tmain(int argc, _TCHAR* argv[]){
 				glDrawElements(GL_TRIANGLES, indexNum, GL_UNSIGNED_INT, 0);
 				glBindVertexArray(0);
 				glUseProgram(0);
+
+				glDepthFunc(GL_LEQUAL);
+				glBindVertexArray(sb_vao);
+				glUseProgram(skyboxprogram);
+				glUniformMatrix4fv(glGetUniformLocation(skyboxprogram, "modelMatrix"), 1, GL_FALSE, (float*)&model);
+				glUniformMatrix4fv(glGetUniformLocation(skyboxprogram, "viewMatrix"), 1, GL_TRUE, (float*)&viewOvr.M[0]);
+				glUniformMatrix4fv(glGetUniformLocation(skyboxprogram, "projectionMatrix"), 1, GL_TRUE, (float*)&proj.M[0]);
+				glActiveTexture(GL_TEXTURE0);
+				glUniform1i(glGetUniformLocation(skyboxprogram, "texSkyBox"), 0);
+				glBindTexture(GL_TEXTURE_CUBE_MAP, skybox);
+				glDrawArrays(GL_TRIANGLES, 0, 36);
+				glBindVertexArray(0);
+				glUseProgram(0);
+				glDepthFunc(GL_LESS);
 
 				glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, 0, 0);
 				glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, 0, 0);
