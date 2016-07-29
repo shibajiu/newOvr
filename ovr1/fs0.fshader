@@ -19,6 +19,8 @@ uniform Material vessel;
 uniform Light light;
 uniform vec3 eyePos;
 
+uniform samplerCube texSkyBox;
+
 in vec3 normal_o;
 in vec3 fragpos;
 
@@ -52,5 +54,18 @@ void main(){
 	float specularStrength=pow(max(dot(halfDir,viewDir),0),vessel.shiness);
 	specularColor=vessel.specular*light.specular*specularStrength;
 
-	color=vec4(c,1);
+	vec3 result=ambientColor+diffuseColor+specularColor;
+
+	//ambient reflect
+	vec3 are=reflect(-viewDir,c);
+	color=texture(texSkyBox,are);
+
+	//Refraction
+	float ratio=1.f/2.42;
+	vec3 ref=refract(-viewDir,c,ratio);
+	color=texture(texSkyBox,ref);
+
+	//color=vec4(1,0,0,1);
+	//color=vec4(c,1);
+	//color=vec4(result,1);
 }

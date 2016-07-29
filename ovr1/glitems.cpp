@@ -216,7 +216,7 @@ no_normals:
 
 
 //initialize static variable
-bool GL::isFullScreen = false;
+bool GL::isFullScreen = false, GL::isMouseMoveAllow=false;
 GLint GL::xmov = 0, GL::xold = 0,GL::ymov=0,GL::yold=0;
 objload GL::Obj = objload();
 vec3 GL::cameraFront = vec3(0, 0, -1), GL::cameraPos = vec3(0, 0, 7), GL::cameraUp = vec3(0, 1, 0);
@@ -266,7 +266,9 @@ int GL::init(int weight, int hight){
 	keystatus[GLFW_KEY_S] = false;
 	keystatus[GLFW_KEY_D] = false;
 	keystatus[GLFW_KEY_U] = false;
-	keystatus[GLFW_KEY_J] = false;
+	keystatus[GLFW_KEY_J] = false;	
+	keystatus[GLFW_KEY_M] = false;
+
 
 	if (glfwInit() == GLFW_FALSE){
 		fprintf_s(stderr, "failed to init glfw\n");
@@ -360,6 +362,10 @@ int GL::init(int weight, int hight){
 		case GLFW_KEY_R:
 			cameraPos = vec3(0, 0, 7);
 			break;
+
+		case GLFW_KEY_M:
+			if (action == GLFW_PRESS)
+				isMouseMoveAllow = !isMouseMoveAllow;
 
 		default:
 			break;
@@ -491,14 +497,13 @@ void GL::render(GLuint indicesNum, GLfloat time, GLuint vao_load){
 	GLfloat yaw=0, pitch=0;
 	yaw += xmov;
 	pitch += ymov;
-	cameraFront = vec3(cos(radians(pitch))*sin(radians(yaw)), sin(radians(pitch)), -cos(radians(pitch))*cos(radians(yaw)));
+	if (isMouseMoveAllow)
+		cameraFront = vec3(cos(radians(pitch))*sin(radians(yaw)), sin(radians(pitch)), -cos(radians(pitch))*cos(radians(yaw)));
 	do_movement(time);
 	char buffer[512];
 	sprintf_s(buffer, 512, "pos:%4.2f %4.2f %4.2f", cameraPos.x, cameraPos.y, cameraPos.z);
 	glfwSetWindowTitle(this->window, buffer);
-	glClearColor(0, 0, 0, 0);
-	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-	glViewport(0, 0, this->weight, this->hight);
+	
 	glBindVertexArray(!vao_load ? vao : vao_load);
 	//glUseProgram(shaderprogram);
 	//glDrawArrays(GL_TRIANGLES, 0, 3);

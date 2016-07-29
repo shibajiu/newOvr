@@ -131,7 +131,7 @@ private:
 	static GLFWwindow* window;
 	static objload Obj;
 	static map<int, bool>keystatus;
-	static bool isFullScreen;
+	static bool isFullScreen, isMouseMoveAllow;
 	static vec3 cameraPos, cameraFront, cameraUp;
 	void do_movement(GLfloat);
 	static int drop_file(string s);
@@ -161,6 +161,9 @@ public:
 	GLuint getElementNum(){ return indexNum; }
 
 	void setCameraPos(vec3 pos){ cameraPos = pos; }
+
+	vec3 getCameraPos(){ return cameraPos; }
+
 #ifdef MYOVR
 	static vec3 keyShift(GLfloat, Vector3f&, Vector3f&, Vector3f&,Vector3f&);
 #endif

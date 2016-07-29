@@ -14,6 +14,5 @@ void main(){
 
 	normal_o=mat3(modelMatrix)*normals;
 	fragpos=mat3(modelMatrix)*vertices;
-	gl_PointSize=2;
 	gl_Position=projectionMatrix*viewMatrix*modelMatrix*vec4(vertices,1);
 }
