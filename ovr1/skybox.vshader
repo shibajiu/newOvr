@@ -10,6 +10,6 @@ out vec3 texCoords_o;
 
 void main(){
 
-	gl_Position=(projection*mat4(mat3(view))*model*vec4(vertices,1)).xyww;
+	gl_Position=(projection*mat4(mat3(view))*model*vec4(vertices,1)).xyzw;
 	texCoords_o=vertices;
 }

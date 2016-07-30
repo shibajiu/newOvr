@@ -108,12 +108,30 @@ int _tmain(int argc, _TCHAR* argv[]){
 		GLuint indexNum = ovrGL->getElementNum();
 		glClearColor(1, 0, 0, 1);
 		glEnable(GL_DEPTH_TEST);
-		glDepthFunc(GL_GREATER);
+		//glDepthMask(GL_FALSE);
 		while (!glfwWindowShouldClose(window)){
 			view = ovrGL->getViewMatrix();
-			model = mat4(1);
 			glViewport(0, 0, 800, 600);
-			glClear(GL_DEPTH_BUFFER|GL_COLOR_BUFFER_BIT);
+			glClearDepth(0);
+			glClear(GL_DEPTH_BUFFER_BIT|GL_COLOR_BUFFER_BIT);
+
+			
+
+			glUseProgram(shaderprogram);
+			vec3 pos = ovrGL->getCameraPos();
+			glUniformMatrix4fv(glGetUniformLocation(shaderprogram, "modelMatrix"), 1, GL_FALSE, (float*)&model);
+			glUniformMatrix4fv(glGetUniformLocation(shaderprogram, "viewMatrix"), 1, GL_FALSE, (float*)&view);
+			glUniformMatrix4fv(glGetUniformLocation(shaderprogram, "projectionMatrix"), 1, GL_FALSE, (float*)&projection);
+			glUniform3fv(viewPosLoc,1, (GLfloat*)&pos);
+			GLfloat now = glfwGetTime(), deltatime = now - lasttime;
+			lasttime = now;
+			glActiveTexture(GL_TEXTURE0);
+			glUniform1i(glGetUniformLocation(skyboxprogram, "texSkyBox"), 0);
+			glBindTexture(GL_TEXTURE_CUBE_MAP, skybox);
+			ovrGL->render(indexNum, deltatime, myVao);
+			glBindTexture(GL_TEXTURE_CUBE_MAP, 0);
+			glUseProgram(0);
+
 
 			glBindVertexArray(sb_vao);
 			glUseProgram(skyboxprogram);
@@ -126,33 +144,6 @@ int _tmain(int argc, _TCHAR* argv[]){
 			glDrawArrays(GL_TRIANGLES, 0, 36);
 			glBindTexture(GL_TEXTURE_CUBE_MAP, 0);
 			glBindVertexArray(0);
-			glUseProgram(0);
-
-			glUseProgram(shaderprogram);
-			
-			vec3 pos = ovrGL->getCameraPos();
-			glUniformMatrix4fv(glGetUniformLocation(shaderprogram, "modelMatrix"), 1, GL_FALSE, (float*)&model);
-			glUniformMatrix4fv(glGetUniformLocation(shaderprogram, "viewMatrix"), 1, GL_FALSE, (float*)&view);
-			glUniformMatrix4fv(glGetUniformLocation(shaderprogram, "projectionMatrix"), 1, GL_FALSE, (float*)&projection);
-			glUniform3fv(viewPosLoc,1, (GLfloat*)&pos);
-
-			GLfloat now = glfwGetTime(), deltatime = now - lasttime;
-			lasttime = now;
-			glActiveTexture(GL_TEXTURE0);
-			glUniform1i(glGetUniformLocation(skyboxprogram, "texSkyBox"), 0);
-			glBindTexture(GL_TEXTURE_CUBE_MAP, skybox);
-			ovrGL->render(indexNum, deltatime, myVao);
-			glBindTexture(GL_TEXTURE_CUBE_MAP, 0);
-
-			glBindVertexArray(sb_vao);
-			model = translate(model, vec3(0, 0, -10));
-			glUniformMatrix4fv(glGetUniformLocation(shaderprogram, "modelMatrix"), 1, GL_FALSE, (float*)&model);
-			glUniformMatrix4fv(glGetUniformLocation(shaderprogram, "viewMatrix"), 1, GL_FALSE, (float*)&view);
-			glUniformMatrix4fv(glGetUniformLocation(shaderprogram, "projectionMatrix"), 1, GL_FALSE, (float*)&projection);
-			glUniform3fv(viewPosLoc, 1, (GLfloat*)&pos);
-			glDrawArrays(GL_TRIANGLES, 0, 6);
-			glBindVertexArray(0);
-
 			glUseProgram(0);
 			
 
