@@ -18,9 +18,9 @@ struct _L_Vertex{
 };
 
 struct _L_Texture{
-	unsigned short	id;
-	string			type;
-	aiString		path;
+	_L_U_INT id;
+	string type;
+	aiString path;
 };
 
 class Mesh{
@@ -31,7 +31,11 @@ private:
 
 public:
 	Mesh(){}
-	Mesh::Mesh(vector<_L_Vertex>, vector<_L_Texture>, vector<_L_U_INT>);
+	Mesh::Mesh(vector<_L_Vertex> _ve, vector<_L_Texture>_te, vector<_L_U_INT>_in){
+		this->vertices = _ve;
+		this->textures = _te;
+		this->Indices = _in;
+	}
 	~Mesh(){
 		this->Indices.clear();
 		this->textures.clear();
@@ -50,7 +54,7 @@ private:
 	void processNode(aiNode*, const aiScene*);
 	Mesh processMesh(aiMesh*, const aiScene*);
 	vector<_L_Texture> loadMaterialTextures(aiMaterial*, aiTextureType, string);
-	_L_U_INT TextureFromFile(const char*,string);
+	_L_U_INT TextureFromFile(const char*, string);
 
 public:
 	A_model(char* _path){

@@ -1,6 +1,5 @@
 // ovr1.cpp : Defines the entry point for the console application.
 //
-
 #include "stdafx.h"
 GLfloat skyboxVertices[] = {
 	// Positions          
@@ -49,6 +48,8 @@ GLfloat skyboxVertices[] = {
 
 
 int _tmain(int argc, _TCHAR* argv[]){
+
+	A_model* model1 = new A_model("e:/suzanne.obj");
 
 	GL *ovrGL = new GL();
 		mat4 view, projection, model = mat4(1);

@@ -1,15 +1,9 @@
 #include "stdafx.h"
 #include "loadwithAssimp.h"
 
-Mesh::Mesh(vector<_L_Vertex>_ve, vector<_L_Texture>_te, vector<_L_U_INT>_in){
-	this->vertices = _ve;
-	this->textures = _te;
-	this->Indices = _in;
-}
-
 void A_model::load_model(string _path){
 	Assimp::Importer importer;
-	auto scene = importer.ReadFile(_path, aiProcess_Triangulate | aiProcess_FlipUVs);
+	auto scene = importer.ReadFile(_path, aiProcess_Triangulate | aiProcess_FlipUVs | aiProcess_GenNormals);
 	if (!scene || scene->mFlags == AI_SCENE_FLAGS_INCOMPLETE || !scene->mRootNode){
 		cerr << "ERR::ASSIMP::" << importer.GetErrorString() << endl;
 		return;
@@ -23,13 +17,15 @@ void A_model::processNode(aiNode* _node, const aiScene* _scene){
 		auto _aimesh = _scene->mMeshes[_node->mMeshes[i]];
 		this->meshes.push_back(processMesh(_aimesh,_scene));
 	}
+	if (_node->mNumChildren == 0)
+		return;
 	for (int i = 0; i < _node->mNumChildren; ++i){
 		this->processNode(_node->mChildren[i], _scene);
 	}
 }
 
 Mesh A_model::processMesh(aiMesh* _aimesh, const aiScene* _scene){
-	vector<_L_Vertex>	_vertices;
+	vector<_L_Vertex>	_vertices(_aimesh->mNumVertices);
 	vector<_L_Texture>	_textures;
 	vector<_L_U_INT>	_indices;
 

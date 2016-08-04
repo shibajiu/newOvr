@@ -16,3 +16,5 @@
 
 //self headers
 #include "ovrglitems.h"
+
+#include "loadwithAssimp.h"
