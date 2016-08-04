@@ -112,10 +112,7 @@ int _tmain(int argc, _TCHAR* argv[]){
 		while (!glfwWindowShouldClose(window)){
 			view = ovrGL->getViewMatrix();
 			glViewport(0, 0, 800, 600);
-			glClearDepth(0);
 			glClear(GL_DEPTH_BUFFER_BIT|GL_COLOR_BUFFER_BIT);
-
-			
 
 			glUseProgram(shaderprogram);
 			vec3 pos = ovrGL->getCameraPos();
@@ -132,7 +129,7 @@ int _tmain(int argc, _TCHAR* argv[]){
 			glBindTexture(GL_TEXTURE_CUBE_MAP, 0);
 			glUseProgram(0);
 
-
+			glDepthFunc(GL_LEQUAL);
 			glBindVertexArray(sb_vao);
 			glUseProgram(skyboxprogram);
 			glUniformMatrix4fv(glGetUniformLocation(skyboxprogram, "model"), 1, GL_FALSE, (float*)&model);
@@ -145,7 +142,7 @@ int _tmain(int argc, _TCHAR* argv[]){
 			glBindTexture(GL_TEXTURE_CUBE_MAP, 0);
 			glBindVertexArray(0);
 			glUseProgram(0);
-			
+			glDepthFunc(GL_LESS);
 
 			glfwPollEvents();
 			glfwSwapBuffers(window);
