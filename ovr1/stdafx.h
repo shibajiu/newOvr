@@ -15,6 +15,4 @@
 // TODO: reference additional headers your program requires here
 
 //self headers
-#include "ovrglitems.h"
-
-#include "loadwithAssimp.h"
+#include "glitems.h"

@@ -27,17 +27,23 @@ class Mesh{
 private:
 	vector<_L_Vertex>	vertices;
 	vector<_L_Texture>	textures;
-	vector<_L_U_INT>	Indices;
+	vector<_L_U_INT>	indices;
+
+	_L_U_INT VAO, VBO, EBO;
+
+	void setupMesh();
 
 public:
 	Mesh(){}
 	Mesh::Mesh(vector<_L_Vertex> _ve, vector<_L_Texture>_te, vector<_L_U_INT>_in){
 		this->vertices = _ve;
 		this->textures = _te;
-		this->Indices = _in;
+		this->indices = _in;
+
+		setupMesh();
 	}
 	~Mesh(){
-		this->Indices.clear();
+		this->indices.clear();
 		this->textures.clear();
 		this->vertices.clear();
 	}

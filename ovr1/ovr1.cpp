@@ -49,11 +49,11 @@ GLfloat skyboxVertices[] = {
 
 int _tmain(int argc, _TCHAR* argv[]){
 
-	A_model* model1 = new A_model("e:/suzanne.obj");
 
 	GL *ovrGL = new GL();
 		mat4 view, projection, model = mat4(1);
 		ovrGL->init(800, 600);
+	A_model* model1 = new A_model("e:/suzanne.obj");
 
 		GLuint skybox = SOIL_load_OGL_cubemap(
 			"mp_orbital/orbital-element_ft.tga",
