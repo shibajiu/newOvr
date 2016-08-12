@@ -53,7 +53,8 @@ GLfloat skyboxVertices[] = {
 
 
 int _tmain(int argc, _TCHAR* argv[]){
-#ifndef ONLYGL
+
+	//ovr init part
 	if (!OVR_SUCCESS(ovr_Initialize(nullptr))){
 		fprintf(stderr, "Failed to initialize libOVR.\n");
 		return 0;
@@ -75,10 +76,13 @@ int _tmain(int argc, _TCHAR* argv[]){
 	ovrSizei fovtextureSize[2];
 
 	ovrSwapTextureSet *tSet[2];
-	//ovrGLTexture *tex;
+
+	//create gl
 	GL *ovrGL = new GL(desc.Resolution.w*0.5, desc.Resolution.h*0.5);
 	GLuint depthbuffer[2];
 	GLuint ovrFramBuffer[2];
+
+	//set framebuffer for each eye
 	for (int i = 0; i < 2; ++i){
 		fovtextureSize[i] = ovr_GetFovTextureSize(session, (ovrEyeType)i, desc.DefaultEyeFov[i], 1.f);
 		layer.Viewport[i] = Recti(fovtextureSize[i]);
@@ -93,8 +97,8 @@ int _tmain(int argc, _TCHAR* argv[]){
 				glBindTexture(GL_TEXTURE_2D, 0);
 			}
 		}
+
 		//set frambuffer for each eye
-	
 		glGenFramebuffers(1, &ovrFramBuffer[i]);
 		//eyeDepthBuffer[eye] = new DepthBuffer(eyeRenderTexture[eye]->GetSize(), 0);
 		glGenTextures(1, depthbuffer+i);
@@ -107,7 +111,7 @@ int _tmain(int argc, _TCHAR* argv[]){
 		glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT24, fovtextureSize[i].w, fovtextureSize[i].h, 0, GL_DEPTH_COMPONENT, GL_UNSIGNED_INT, NULL);
 	}
 
-	
+	//set framebuffer for pc window
 	ovrGLTexture* mirrorTexture;
 	if (OVR_FAILURE(ovr_CreateMirrorTextureGL(session, GL_SRGB8_ALPHA8, desc.Resolution.w*0.5, desc.Resolution.h*0.5,reinterpret_cast<ovrTexture**>(&mirrorTexture)))){
 		fprintf(stderr, "Failed to create mirror texture.");
@@ -128,6 +132,7 @@ int _tmain(int argc, _TCHAR* argv[]){
 		hmdToEyeViewOffset[eye] = renderDesc.HmdToEyeViewOffset;
 	}
 
+	//skybox texture
 	GLuint skybox = SOIL_load_OGL_cubemap(
 		"mp_orbital/orbital-element_ft.tga",
 		"mp_orbital/orbital-element_bk.tga",
@@ -140,6 +145,7 @@ int _tmain(int argc, _TCHAR* argv[]){
 		SOIL_FLAG_MIPMAPS
 		);
 
+	//gen skybox's vao
 	GLuint sb_vao, sb_vbo;
 	glGenVertexArrays(1, &sb_vao);
 	glGenBuffers(1, &sb_vbo);
@@ -152,11 +158,13 @@ int _tmain(int argc, _TCHAR* argv[]){
 	GL glsb;
 	GLuint skyboxprogram = glsb.load_shader(const_cast<char*>("skybox.vshader"), const_cast<char*>("skybox.fshader"));
 
+	//get glfw window
 	auto window = ovrGL->getWindow();
 	static GLuint shaderprogram, myVao, indexNum;
 	static mat4 view, projection, model = mat4(1);
 	static	GLfloat lasttime;
 
+	//model shader
 	shaderprogram = ovrGL->load_shader("vs0.vshader", "fs0.fshader");
 	GLint matAmbientLoc = glGetUniformLocation(shaderprogram, "vessel.ambient");
 	GLint matDiffuseLoc = glGetUniformLocation(shaderprogram, "vessel.diffuse");
@@ -179,7 +187,7 @@ int _tmain(int argc, _TCHAR* argv[]){
 	glProgramUniform3f(shaderprogram, lightSpecularLoc, 1.0f, 1.0f, 1.0f);
 	glProgramUniform4f(shaderprogram, lightPosition, 1.0f, 1.0f, 1.0f, 0.f);
 
-
+	//load model
 	//ovrGL->setCameraPos(vec3(200, 200, 200));
 	myVao = ovrGL->creatVao("e:/vessel.obj", FILE_VESSEL);
 	indexNum = ovrGL->getElementNum();
@@ -204,6 +212,7 @@ int _tmain(int argc, _TCHAR* argv[]){
 
 		//Pos2.y = ovr_GetFloat(session, OVR_KEY_EYE_HEIGHT, Pos2.y);
 
+		//render part
 		if (isVisible){
 			for (int eye = 0; eye < 2; ++eye){
 				// Increment to use next texture, just before writing
@@ -213,6 +222,7 @@ int _tmain(int argc, _TCHAR* argv[]){
 				//eyeRenderTexture[eye]->SetAndClearRenderSurface(eyeDepthBuffer[eye]);
 				auto texl = reinterpret_cast<ovrGLTexture*>(&tSet[eye]->Textures[tSet[eye]->CurrentIndex]);
 
+				//render into each eye's framebuffer
 				glBindFramebuffer(GL_FRAMEBUFFER, ovrFramBuffer[eye]);
 				glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, texl->OGL.TexId, 0);
 				glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, depthbuffer[eye], 0);
@@ -241,11 +251,11 @@ int _tmain(int argc, _TCHAR* argv[]){
 					}
 				}*/
 				
-				
 				char buffer[512];
 				sprintf_s(buffer, 512, "pos:%4.2f %4.2f %4.2f", shiftedEyePos.x, shiftedEyePos.y, shiftedEyePos.z);
 				glfwSetWindowTitle(window, buffer);
 
+				//render model
 				glUseProgram(shaderprogram);
 				glUniformMatrix4fv(glGetUniformLocation(shaderprogram, "modelMatrix"), 1, GL_FALSE, (float*)&model);
 				glUniformMatrix4fv(glGetUniformLocation(shaderprogram, "viewMatrix"), 1, GL_TRUE, (float*)&viewOvr.M[0]);
@@ -257,6 +267,7 @@ int _tmain(int argc, _TCHAR* argv[]){
 				glBindVertexArray(0);
 				glUseProgram(0);
 
+				//render skybox
 				glDepthFunc(GL_LEQUAL);
 				glBindVertexArray(sb_vao);
 				glUseProgram(skyboxprogram);
@@ -271,6 +282,7 @@ int _tmain(int argc, _TCHAR* argv[]){
 				glUseProgram(0);
 				glDepthFunc(GL_LESS);
 
+				//clear the tex attach to the fbo for next render process
 				glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, 0, 0);
 				glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, 0, 0);
 				glBindFramebuffer(GL_FRAMEBUFFER, 0);
@@ -290,6 +302,7 @@ int _tmain(int argc, _TCHAR* argv[]){
 
 		// Blit mirror texture to back buffer
 		glBindFramebuffer(GL_READ_FRAMEBUFFER, mirrorFBO);
+		//render mirrorfbo into fbo0
 		glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
 		GLint w = mirrorTexture->OGL.Header.TextureSize.w;
 		GLint h = mirrorTexture->OGL.Header.TextureSize.h;
@@ -301,118 +314,11 @@ int _tmain(int argc, _TCHAR* argv[]){
 		glfwPollEvents();
 		glfwSwapBuffers(window);
 	}
-#else
-#ifdef ONLYGL
-	GL *ovrGL = new GL();
-		mat4 view, projection, model = mat4(1);
-		ovrGL->init(800, 600);
 
-		GLuint skybox = SOIL_load_OGL_cubemap(
-			"mp_orbital/orbital-element_ft.tga",
-			"mp_orbital/orbital-element_bk.tga",
-			"mp_orbital/orbital-element_up.tga",
-			"mp_orbital/orbital-element_dn.tga",
-			"mp_orbital/orbital-element_rt.tga",
-			"mp_orbital/orbital-element_lf.tga",
-			SOIL_LOAD_RGB,
-			SOIL_CREATE_NEW_ID,
-			SOIL_FLAG_MIPMAPS
-			);
-
-		GLuint sb_vao, sb_vbo;
-		glGenVertexArrays(1, &sb_vao);
-		glGenBuffers(1, &sb_vbo);
-		glBindVertexArray(sb_vao);
-		glBindBuffer(GL_ARRAY_BUFFER, sb_vbo);
-		glBufferData(GL_ARRAY_BUFFER, sizeof(skyboxVertices), skyboxVertices, GL_STATIC_DRAW);
-		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(GLfloat), (void*)0);
-		glEnableVertexAttribArray(0);
-		glBindVertexArray(0);
-		GL glsb;
-		GLuint skyboxprogram = glsb.load_shader(const_cast<char*>("skybox.vshader"), const_cast<char*>("skybox.fshader"));
-
-
-		GLuint shaderprogram = ovrGL->load_shader("vs0.vshader", "fs0.fshader");
-
-		GLint matAmbientLoc = glGetUniformLocation(shaderprogram, "vessel.ambient");
-		GLint matDiffuseLoc = glGetUniformLocation(shaderprogram, "vessel.diffuse");
-		GLint matSpecularLoc = glGetUniformLocation(shaderprogram, "vessel.specular");
-		GLint matShineLoc = glGetUniformLocation(shaderprogram, "vessel.shininess");
-
-		glProgramUniform3f(shaderprogram, matAmbientLoc, 1.0f, 0.5f, 0.31f);
-		glProgramUniform3f(shaderprogram, matDiffuseLoc, 1.0f, 0.5f, 0.31f);
-		glProgramUniform3f(shaderprogram, matSpecularLoc, 0.5f, 0.5f, 0.5f);
-		glProgramUniform1f(shaderprogram, matShineLoc, 32.0f);
-		
-		GLint viewPosLoc = glGetUniformLocation(shaderprogram, "viewPos");
-		GLint lightPosition = glGetUniformLocation(shaderprogram, "light.position");
-		GLint lightAmbientLoc = glGetUniformLocation(shaderprogram, "light.ambient");
-		GLint lightDiffuseLoc = glGetUniformLocation(shaderprogram, "light.diffuse");
-		GLint lightSpecularLoc = glGetUniformLocation(shaderprogram, "light.specular");
-
-		glProgramUniform3f(shaderprogram, lightAmbientLoc, 0.2f, 0.2f, 0.2f);
-		glProgramUniform3f(shaderprogram, lightDiffuseLoc, 0.5f, 0.5f, 0.5f);
-		glProgramUniform3f(shaderprogram, lightSpecularLoc, 1.0f, 1.0f, 1.0f);
-		glProgramUniform4f(shaderprogram, lightPosition, 1.0f, 1.0f, 1.0f, 0.f);
-
-		//ovrGL->setCameraPos(vec3(200, 200, 200));
-		projection = perspective(radians(60.f), 4.f/3 , 0.1f, 1000.f);
-		GLFWwindow* window = ovrGL->getWindow();
-		GLfloat lasttime = glfwGetTime();
-		GLuint myVao = ovrGL->creatVao("e:/suzanne.obj", FILE_WITH_UNSORTED_NORMALS);
-		GLuint indexNum = ovrGL->getElementNum();
-		glEnable(GL_DEPTH_TEST | GL_STENCIL_TEST);
-		glDepthFunc(GL_LESS);
-		glDepthMask(GL_TRUE);
-		glStencilMask(0x00);
-		glEnable(GL_CULL_FACE);
-		while (!glfwWindowShouldClose(window)){
-			view = ovrGL->getViewMatrix();
-			glClearColor(0, 0, 0, 0);
-			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
-			glViewport(0, 0, 800, 600);
-
-			glDepthMask(GL_FALSE);
-			glBindVertexArray(sb_vao);
-			glUseProgram(skyboxprogram);
-			glUniformMatrix4fv(glGetUniformLocation(skyboxprogram, "modelMatrix"), 1, GL_FALSE, (float*)&model);
-			glUniformMatrix4fv(glGetUniformLocation(skyboxprogram, "viewMatrix"), 1, GL_FALSE, (float*)&view);
-			glUniformMatrix4fv(glGetUniformLocation(skyboxprogram, "projectionMatrix"), 1, GL_FALSE, (float*)&projection);
-			glActiveTexture(GL_TEXTURE0);
-			glUniform1i(glGetUniformLocation(skyboxprogram, "texSkyBox"), 0);
-			glBindTexture(GL_TEXTURE_CUBE_MAP, skybox);
-			glDrawArrays(GL_TRIANGLES, 0, 36);
-			glBindTexture(GL_TEXTURE_CUBE_MAP, 0);
-			glBindVertexArray(0);
-			glUseProgram(0);
-			glDepthMask(GL_TRUE);
-
-			glUseProgram(shaderprogram);
-			
-			vec3 pos = ovrGL->getCameraPos();
-			glUniformMatrix4fv(glGetUniformLocation(shaderprogram, "modelMatrix"), 1, GL_FALSE, (float*)&model);
-			glUniformMatrix4fv(glGetUniformLocation(shaderprogram, "viewMatrix"), 1, GL_FALSE, (float*)&view);
-			glUniformMatrix4fv(glGetUniformLocation(shaderprogram, "projectionMatrix"), 1, GL_FALSE, (float*)&projection);
-			glUniform3fv(viewPosLoc,1, (GLfloat*)&pos);
-
-			GLfloat now = glfwGetTime(), deltatime = now - lasttime;
-			lasttime = now;
-			glActiveTexture(GL_TEXTURE0);
-			glUniform1i(glGetUniformLocation(skyboxprogram, "texSkyBox"), 0);
-			glBindTexture(GL_TEXTURE_CUBE_MAP, skybox);
-			ovrGL->render(indexNum, deltatime, myVao);
-			glBindTexture(GL_TEXTURE_CUBE_MAP, 0);
-
-			glfwPollEvents();
-			glfwSwapBuffers(window);
-		}
-		delete ovrGL;
-#endif
-#endif
+	//destroy glfw before ovr
 	glfwTerminate();
-#ifndef ONLYGL
 	ovr_Destroy(session);
-#endif
+
 	//system("pause");
 	return 0;
 }
