@@ -566,7 +566,7 @@ void Mesh::setupMesh(){
 
 void A_model::load_model(string _path){
 	Assimp::Importer importer;
-	auto scene = importer.ReadFile(_path, aiProcess_Triangulate | aiProcess_FlipUVs | aiProcess_GenNormals);
+	auto scene = importer.ReadFile(_path, aiProcess_Triangulate | aiProcess_FlipUVs | aiProcess_GenNormals | aiProcess_JoinIdenticalVertices | aiProcess_SortByPType);
 	if (!scene || scene->mFlags == AI_SCENE_FLAGS_INCOMPLETE || !scene->mRootNode){
 		cerr << "ERR::ASSIMP::" << importer.GetErrorString() << endl;
 		return;
@@ -601,7 +601,15 @@ Mesh A_model::processMesh(aiMesh* _aimesh, const aiScene* _scene){
 		_v.x = _aimesh->mNormals[i].x;
 		_v.y = _aimesh->mNormals[i].y;
 		_v.z = _aimesh->mNormals[i].z;
-		_vertices[i].Normal = _v;
+		_vertices[i].Normal = _v; 
+		if (_aimesh->mColors[0]){
+			glm::vec4 _c;
+			_c.r = _aimesh->mColors[0][i].r;
+			_c.g = _aimesh->mColors[0][i].g;
+			_c.b = _aimesh->mColors[0][i].b;
+			_c.a = _aimesh->mColors[0][i].a;
+			_vertices[i].v_Color = _c;
+		}
 		if (_aimesh->mTextureCoords[0]){
 			glm::vec2 _v;
 			_v.x = _aimesh->mTextureCoords[0][i].x;

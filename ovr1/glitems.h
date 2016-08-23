@@ -179,6 +179,7 @@ struct _L_Vertex{
 	glm::vec3 Position;
 	glm::vec3 Normal;
 	glm::vec2 TexCoords;
+	glm::vec4 v_Color;//color of single vertex
 };
 
 struct _L_Texture{
