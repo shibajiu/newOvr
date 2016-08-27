@@ -16,3 +16,10 @@
 
 //self headers
 #include "glitems.h"
+//realsense includes
+#include <pxcsession.h>
+#include <pxcsensemanager.h>
+#include <pxccapture.h>
+#include <pxctouchlesscontroller.h>
+
+#define IFCERR(b,msg) if(b){cerr<<msg<<endl;return;} 
