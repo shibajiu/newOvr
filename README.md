@@ -6,3 +6,6 @@ add material and light strcut in fragment shader
 
 ###20160827
 Added feature:RealSense
+
+###20160828
+need boost::thread

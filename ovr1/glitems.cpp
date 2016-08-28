@@ -501,6 +501,7 @@ void GL::render(GLuint indicesNum, GLfloat time, GLuint vao_load){
 	do_movement(time);
 	char buffer[512];
 	sprintf_s(buffer, 512, "pos:%4.2f %4.2f %4.2f", cameraPos.x, cameraPos.y, cameraPos.z);
+	title = buffer;
 	glfwSetWindowTitle(this->window, buffer);
 	
 	glBindVertexArray(!vao_load ? vao : vao_load);
@@ -508,6 +509,19 @@ void GL::render(GLuint indicesNum, GLfloat time, GLuint vao_load){
 	//glDrawArrays(GL_TRIANGLES, 0, 3);
 	glDrawElements(GL_TRIANGLES, indicesNum, GL_UNSIGNED_INT, 0);
 	glBindVertexArray(0);
+}
+
+void GL::setWindowTitle(char* _title, bool _isAppend){
+	if (_isAppend){
+		int _len = sizeof(title) + sizeof(_title) + 1;
+		char* _r = (char*)malloc(_len);
+		sprintf_s(_r, _len, "%s%s", title, _title);
+		glfwSetWindowTitle(window, _r);
+		free(_r);
+	}
+	else
+		glfwSetWindowTitle(window, _title);
+	
 }
 
 #ifdef MYOVR

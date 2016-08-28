@@ -129,6 +129,7 @@ private:
 	GLint success;
 	GLchar infolog[512];
 	vector<vec3> vertexbuffer;
+	char* title;
 	static GLint xmov, xold, ymov, yold;
 	static GLuint vao;//please store this after create
 	static GLFWwindow* window;
@@ -150,10 +151,12 @@ public:
 	void creatProgram(char* vs, char* fs);
 	GLuint creatVao(char* path, int flag = FILE_NON);
 	static GLuint load_shader(const char* path, const char* path2);
+	void setWindowTitle(char*, bool isAppend = false);
 
+	//inline
 	GLuint get_vao(){ return vao; }
 
-	GLuint get_program(){ return shaderprogram; }//just use usProgram()
+	GLuint get_program(){ return shaderprogram; }//just use useProgram()
 
 	void useProgram(){ glUseProgram(shaderprogram); }
 

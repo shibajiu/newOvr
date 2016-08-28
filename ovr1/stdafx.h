@@ -9,8 +9,10 @@
 
 #include <stdio.h>
 #include <tchar.h>
+#include <thread>
 
-
+#include <boost/thread/thread.hpp>
+#include <boost/thread/mutex.hpp>
 
 // TODO: reference additional headers your program requires here
 
@@ -21,5 +23,6 @@
 #include <pxcsensemanager.h>
 #include <pxccapture.h>
 #include <pxctouchlesscontroller.h>
+#include "ovrrealsense.h"
 
 #define IFCERR(b,msg) if(b){cerr<<msg<<endl;return;} 
