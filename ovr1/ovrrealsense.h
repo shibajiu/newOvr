@@ -24,7 +24,7 @@ public:
 	ovrrealsense(GLFWwindow*);
 	~ovrrealsense();
 	void Start();
-
+	glm::vec3 getHandMove();
 };
 
 class ovrUXEventHandler :public PXCTouchlessController::UXEventHandler{

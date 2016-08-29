@@ -120,14 +120,16 @@ int _tmain(int argc, _TCHAR* argv[]){
 		glViewport(0, 0, 800, 600);
 		glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
 
+		GLfloat now = glfwGetTime(), deltatime = now - lasttime;
+		lasttime = now;
 		glUseProgram(shaderprogram);
 		vec3 pos = ovrGL->getCameraPos();
-		glUniformMatrix4fv(glGetUniformLocation(shaderprogram, "modelMatrix"), 1, GL_FALSE, (float*)&model);
+		vec3 rspos = rs->getHandMove();
+		auto rollmodel = glm::rotate_slow(model, now*rspos.x, glm::vec3(0, 1, 0));
+		glUniformMatrix4fv(glGetUniformLocation(shaderprogram, "modelMatrix"), 1, GL_FALSE, (float*)&rollmodel);
 		glUniformMatrix4fv(glGetUniformLocation(shaderprogram, "viewMatrix"), 1, GL_FALSE, (float*)&view);
 		glUniformMatrix4fv(glGetUniformLocation(shaderprogram, "projectionMatrix"), 1, GL_FALSE, (float*)&projection);
 		glUniform3fv(viewPosLoc, 1, (GLfloat*)&pos);
-		GLfloat now = glfwGetTime(), deltatime = now - lasttime;
-		lasttime = now;
 		glActiveTexture(GL_TEXTURE0);
 		glUniform1i(glGetUniformLocation(skyboxprogram, "texSkyBox"), 0);
 		glBindTexture(GL_TEXTURE_CUBE_MAP, skybox);

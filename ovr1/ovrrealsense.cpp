@@ -64,6 +64,11 @@ void ovrrealsense::SetConfiguration(){
 	ptc->SetPointerSensitivity(PXCTouchlessController::PointerSensitivity_Smoothed);
 }
 
+glm::vec3 ovrrealsense::getHandMove(){
+	//return glm::vec3(0.2, 0, 0);//for test
+	return moved;
+}
+
 void ovrUXEventHandler::OnFiredUXEvent(const PXCTouchlessController::UXEventData * _data){
 	switch (_data->type){
 	case PXCTouchlessController::UXEventData::UXEvent_ScrollDown:
