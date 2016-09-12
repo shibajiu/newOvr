@@ -152,6 +152,7 @@ public:
 	GLuint creatVao(char* path, int flag = FILE_NON);
 	static GLuint load_shader(const char* path, const char* path2);
 	void setWindowTitle(char*, bool isAppend = false);
+	glm::mat3 getYawPitchMatrix(GLfloat, GLfloat);
 
 	//inline
 	GLuint get_vao(){ return vao; }

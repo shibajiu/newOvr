@@ -524,6 +524,12 @@ void GL::setWindowTitle(char* _title, bool _isAppend){
 	
 }
 
+glm::mat3 GL::getYawPitchMatrix(GLfloat yaw, GLfloat pitch){
+	glm::mat3 _t(1);
+
+	return _t;
+}
+
 #ifdef MYOVR
 
 vec3 GL::keyShift(GLfloat time, Vector3f& pos, Vector3f& front, Vector3f& up,Vector3f& pos2){
