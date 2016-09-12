@@ -15,7 +15,7 @@
 #define OVR_OS_LINUX
 #endif
 
-//#define MYOVR
+#define MYOVR
 
 #include <GL\glew.h>
 #include <GLFW\glfw3.h>

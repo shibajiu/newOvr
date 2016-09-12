@@ -23,6 +23,7 @@ uniform samplerCube texSkyBox;
 
 in vec3 normal_o;
 in vec3 fragpos;
+in vec3 view_normal;
 
 out vec4 color;
 
@@ -64,7 +65,7 @@ void main(){
 	float ratio=1.f/2.42;
 	vec3 ref=refract(-viewDir,c,ratio);
 	color=texture(texSkyBox,ref);
-
+	color=vec4(view_normal,1);
 	//color=vec4(1,0,0,1);
 	//color=vec4(c,1);
 	//color=vec4(result,1);
