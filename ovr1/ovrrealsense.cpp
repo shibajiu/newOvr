@@ -11,7 +11,7 @@ ovrrealsense::ovrrealsense(GLFWwindow *_window){
 	isStop = false;
 	window = _window;
 	roll = glm::mat4(1.f);
-	oldpos = glm::vec3(0.5f);
+	pos = oldpos = glm::vec3(0.5f);
 	moved = glm::vec3(0.f);
 }
 
@@ -37,7 +37,7 @@ void ovrrealsense::Start(){
 		cerr << "PXCSenseManager::CreateInstance::FAILED" << endl;
 		return;
 	}
-	if (psm->EnableTouchlessController() <= pxcStatus::PXC_STATUS_NO_ERROR){
+	if (psm->EnableTouchlessController() < pxcStatus::PXC_STATUS_NO_ERROR){
 		cerr << "PXCSenseManager::EnableTouchlessController::FAILED" << endl;
 		return;
 	}
@@ -69,6 +69,10 @@ glm::vec3 ovrrealsense::getHandMove(){
 	return moved;
 }
 
+glm::vec3 ovrrealsense::getHandPos(){
+	return pos;
+}
+
 void ovrUXEventHandler::OnFiredUXEvent(const PXCTouchlessController::UXEventData * _data){
 	switch (_data->type){
 	case PXCTouchlessController::UXEventData::UXEvent_ScrollDown:
@@ -86,11 +90,13 @@ void ovrUXEventHandler::OnFiredUXEvent(const PXCTouchlessController::UXEventData
 
 	if (rs->oldpos == glm::vec3(0.5f)){
 		rs->oldpos = glm::vec3(_data->position.x, _data->position.y, _data->position.z);
+		cout << "here" << endl;
 	}
+	rs->pos = PXCPoint3_to_vec3(_data->position);
 	rs->moved = getPosition_from_UXEventData(const_cast<PXCTouchlessController::UXEventData*>(_data)) - rs->oldpos;
 }
 
-glm::vec3 ovrUXEventHandler::PXCPoint3_to_vec3(PXCPoint3DF32 &_position){
+glm::vec3 ovrUXEventHandler::PXCPoint3_to_vec3(const PXCPoint3DF32 &_position){
 	return glm::vec3(_position.x, _position.y, _position.z);
 }
 

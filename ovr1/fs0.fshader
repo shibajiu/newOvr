@@ -65,7 +65,9 @@ void main(){
 	float ratio=1.f/2.42;
 	vec3 ref=refract(-viewDir,c,ratio);
 	color=texture(texSkyBox,ref);
-	color=vec4(view_normal,1);
+	float co=view_normal.x+view_normal.y+view_normal.z;
+	co*=0.333;
+	color=vec4(co,0.1,0.1,0);
 	//color=vec4(1,0,0,1);
 	//color=vec4(c,1);
 	//color=vec4(result,1);

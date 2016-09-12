@@ -24,6 +24,8 @@
 #include <stdlib.h>
 #include <iostream>
 #include <gtx\transform.hpp>
+#include <gtx\norm.hpp>
+#include <gtx\quaternion.hpp>
 #include <regex>
 #include <math.h>
 #include <fstream>

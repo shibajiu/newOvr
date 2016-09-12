@@ -12,3 +12,4 @@ void main(){
 
 	gl_Position=(projectionMatrix*mat4(mat3(viewMatrix))*modelMatrix*vec4(vertices,1)).xyww;
 	texCoords_o=vertices;
+}

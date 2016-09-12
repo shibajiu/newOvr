@@ -1,10 +1,13 @@
 // ovr1.cpp : Defines the entry point for the console application.
 
 #include "stdafx.h"
+#include <boost/thread/thread.hpp>
+
 void ovrDisplay1st();
 void ovrDisplaying(mat4);
 //#define ONLYGL
-
+void rsthread_main(ovrrealsense * rs);
+quat RotationBetweenVectors(vec3 start, vec3 dest);
 GLfloat skyboxVertices[] = {
 	// Positions          
 	-1.0f, 1.0f, -1.0f,
@@ -67,6 +70,7 @@ int _tmain(int argc, _TCHAR* argv[]){
 		ovr_Shutdown();
 		return 0;
 	}
+
 
 	ovrHmdDesc desc = ovr_GetHmdDesc(session);
 	ovrLayerEyeFov layer;
@@ -163,6 +167,9 @@ int _tmain(int argc, _TCHAR* argv[]){
 	static mat4 view, projection, model = mat4(1);
 	static	GLfloat lasttime;
 
+	ovrrealsense *ovrrs = new ovrrealsense(window);
+	boost::thread rsthread(rsthread_main,ovrrs);
+
 	//model shader
 	shaderprogram = ovrGL->load_shader("vs0.vshader", "fs0.fshader");
 	GLint matAmbientLoc = glGetUniformLocation(shaderprogram, "vessel.ambient");
@@ -254,9 +261,14 @@ int _tmain(int argc, _TCHAR* argv[]){
 				sprintf_s(buffer, 512, "pos:%4.2f %4.2f %4.2f", shiftedEyePos.x, shiftedEyePos.y, shiftedEyePos.z);
 				glfwSetWindowTitle(window, buffer);
 
+				auto handmoved = ovrrs->getHandPos();
+				//cout << handmoved.x << "/" << handmoved.y << "/" << handmoved.z << endl;
+				quat rot1 = RotationBetweenVectors(vec3(0.0f, 0.0f, 1.0f), handmoved);
+				mat4 rotmat = toMat4(rot1);
+				mat4 rotmodel = rotmat*model;
 				//render model
 				glUseProgram(shaderprogram);
-				glUniformMatrix4fv(glGetUniformLocation(shaderprogram, "modelMatrix"), 1, GL_FALSE, (float*)&model);
+				glUniformMatrix4fv(glGetUniformLocation(shaderprogram, "modelMatrix"), 1, GL_FALSE, (float*)&rotmodel);
 				glUniformMatrix4fv(glGetUniformLocation(shaderprogram, "viewMatrix"), 1, GL_TRUE, (float*)&viewOvr.M[0]);
 				glUniformMatrix4fv(glGetUniformLocation(shaderprogram, "projectionMatrix"), 1, GL_TRUE, (float*)&proj.M[0]);
 
@@ -320,5 +332,44 @@ int _tmain(int argc, _TCHAR* argv[]){
 
 	//system("pause");
 	return 0;
+
+}
+
+void rsthread_main(ovrrealsense * rs){
+
+	rs->Start();
+}
+
+quat RotationBetweenVectors(vec3 start, vec3 dest){
+    start = normalize(start);
+    dest = normalize(dest);
+
+    float cosTheta = dot(start, dest);
+    vec3 rotationAxis;
+
+    if (cosTheta < -1 + 0.001f){
+        // special case when vectors in opposite directions:
+        // there is no "ideal" rotation axis
+        // So guess one; any will do as long as it's perpendicular to start
+        rotationAxis = cross(vec3(0.0f, 0.0f, 1.0f), start);
+        if (length2(rotationAxis) < 0.01 ) // bad luck, they were parallel, try again!
+            rotationAxis = cross(vec3(1.0f, 0.0f, 0.0f), start);
+		
+        rotationAxis = normalize(rotationAxis);
+        return angleAxis(180.0f, rotationAxis);
+		
+    }
+
+    rotationAxis = cross(start, dest);
+
+    float s = sqrt( (1+cosTheta)*2 );
+    float invs = 1 / s;
+
+    return quat(
+        s * 0.5f,
+        rotationAxis.x * invs,
+        rotationAxis.y * invs,
+        rotationAxis.z * invs
+    );
 
 }
